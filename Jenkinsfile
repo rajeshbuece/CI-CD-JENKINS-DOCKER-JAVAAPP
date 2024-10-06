@@ -1,10 +1,6 @@
 pipeline {
     agent any
     
-    environment {
-        DOCKER_IMAGE = "rajeshbuece/java-app"
-    }
-
     stages {
         stage('Clone') {
             steps {
@@ -12,25 +8,20 @@ pipeline {
             }
         }
         stage('Build') {
-            steps {
-                docker.image('maven:3.8.1').inside {
-                    sh 'mvn clean package'
+            agent {
+                docker {
+                    image 'maven:3.8.1'   // Specify the Docker image for Maven
+                    args '-v /root/.m2:/root/.m2'  // To cache Maven dependencies
                 }
+            }
+            steps {
+                sh 'mvn clean package'
             }
         }
         stage('Docker Build') {
             steps {
                 script {
-                    dockerImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
-                }
-            }
-        }
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        dockerImage.push("${env.BUILD_ID}")
-                    }
+                    dockerImage = docker.build("your-app:${env.BUILD_ID}")
                 }
             }
         }
